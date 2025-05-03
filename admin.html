@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - Leaderboard</title>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #fff3e0;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background-color: #ffffff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #ffe0b2;
+    }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #f57c00;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel - Update XP and Messages</h1>
+  <table id="adminTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Location</th>
+        <th>XP</th>
+        <th>Update XP</th>
+        <th>Message</th>
+        <th>Update Message</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="boostXP()">Boost Everyone Except Alexander</button>
+  
+<script>
+  const defaultPlayers = [
+    { name: 'Mason', location: 'Newtown', xp: 3980, message: 'Catch me if you can!' },
+    { name: 'Lachlan', location: 'Stanmore', xp: 3650, message: 'Top 3? More like top 1.' },
+    { name: 'Zoe', location: 'Annandale', xp: 3250, message: 'Girls rule this board!' },
+    { name: 'Ethan', location: 'Marrickville', xp: 2890, message: 'Almost there, just a few hundred more.' },
+    { name: 'Ruby', location: 'Dulwich Hill', xp: 2755, message: 'XP hoarder and proud!' },
+    { name: 'Noah', location: 'Leichhardt', xp: 2480, message: 'XP grind never stops.' },
+    { name: 'Charlotte', location: 'Petersham', xp: 2120, message: 'Soon you’ll all see.' },
+    { name: 'Jack', location: 'Rozelle', xp: 1990, message: 'I’m not last. That’s a win.' },
+    { name: 'Lucas', location: 'Haberfield', xp: 1840, message: 'Wait... what’s XP again?' },
+    { name: 'Oliver', location: 'Balmain', xp: 1775, message: 'I’ve got potential, just not XP.' },
+    { name: 'Alexander', location: 'Alexandria', xp: 2000, message: '' },
+  ];
+
+  function loadPlayers() {
+    const saved = localStorage.getItem('leaderboard_data');
+    return saved ? JSON.parse(saved) : defaultPlayers;
+  }
+
+  function savePlayers(players) {
+    localStorage.setItem('leaderboard_data', JSON.stringify(players));
+  }
+</script>
+
+  <script>
+    let players = loadPlayers();
+
+    function renderTable() {
+      const tbody = document.querySelector('#adminTable tbody');
+      tbody.innerHTML = '';
+      players.forEach((p, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.location}</td>
+          <td id="xp-${idx}">${p.xp}</td>
+          <td>
+            <input type="number" id="input-xp-${idx}" value="${p.xp}" />
+            <button onclick="updateXP(${idx})">Update</button>
+          </td>
+          <td>
+            <input type="text" id="input-msg-${idx}" value="${p.message}" />
+          </td>
+          <td>
+            <button onclick="updateMessage(${idx})">Update</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateXP(index) {
+      const val = parseInt(document.getElementById(`input-xp-${index}`).value);
+      if (!isNaN(val)) {
+        players[index].xp = val;
+        savePlayers(players);
+        renderTable();
+      }
+    }
+
+    function updateMessage(index) {
+      const msg = document.getElementById(`input-msg-${index}`).value.trim();
+      players[index].message = msg;
+      savePlayers(players);
+      renderTable();
+    }
+
+    function boostXP() {
+      players.forEach((p, i) => {
+        if (p.name !== 'Alexander') {
+          const boost = Math.floor(Math.random() * 100) * 5;
+          p.xp += boost;
+        }
+      });
+      savePlayers(players);
+      renderTable();
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
