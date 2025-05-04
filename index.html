@@ -10,6 +10,7 @@
       background-color: #f9f9f9;
       margin: 0;
       display: flex;
+      flex-direction: row;
       height: 100vh;
     }
     .sidebar {
@@ -18,6 +19,10 @@
       background-color: #e0f7fa;
       border-right: 6px solid #00838f;
       font-size: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
     }
     .content {
       flex: 1;
@@ -41,7 +46,11 @@
     th {
       background-color: #eceff1;
     }
-    tr:hover td.name::after {
+    tr.top-3 td {
+      background-color: #d1ffd6;
+      font-weight: bold;
+    }
+    .name:hover::after {
       content: attr(data-message);
       position: absolute;
       left: 100%;
@@ -54,10 +63,6 @@
       white-space: nowrap;
       z-index: 10;
       font-size: 0.9rem;
-    }
-    tr.top-3 td {
-      background-color: #d1ffd6;
-      font-weight: bold;
     }
     .input-container {
       margin-top: 20px;
@@ -84,13 +89,32 @@
     .input-container button:hover {
       background-color: #004d40;
     }
+    .challenge-btn {
+      background-color: #ffa000;
+      color: white;
+      padding: 6px 10px;
+      border: none;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .crown {
+      margin-left: 5px;
+      color: gold;
+    }
+    .message-banner {
+      padding: 12px;
+      background-color: #fff8e1;
+      border-top: 2px solid #ffc107;
+      text-align: center;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
   <div class="sidebar">
     <h2>Level 10</h2>
     <p>Local Sydney Inner West League</p>
-<p>May 2025</p>
+    <p>May 2025</p>
     <strong>Rank in top 3 to rise to the next league.</strong>
   </div>
   <div class="content">
@@ -110,50 +134,111 @@
       <button id="updateMsg">Update Message</button>
     </div>
   </div>
-  
-<script>
-  const defaultPlayers = [
-    { name: 'Mason', location: 'Newtown', xp: 3980, message: 'Catch me if you can!' },
-    { name: 'Lachlan', location: 'Stanmore', xp: 3650, message: 'Top 3? More like top 1.' },
-    { name: 'Zoe', location: 'Annandale', xp: 3250, message: 'Girls rule this board!' },
-    { name: 'Ethan', location: 'Marrickville', xp: 2890, message: 'Almost there, just a few hundred more.' },
-    { name: 'Ruby', location: 'Dulwich Hill', xp: 2755, message: 'XP hoarder and proud!' },
-    { name: 'Noah', location: 'Leichhardt', xp: 2480, message: 'XP grind never stops.' },
-    { name: 'Charlotte', location: 'Petersham', xp: 2120, message: 'Soon you’ll all see.' },
-    { name: 'Jack', location: 'Rozelle', xp: 1990, message: 'I’m not last. That’s a win.' },
-    { name: 'Lucas', location: 'Haberfield', xp: 1840, message: 'Wait... what’s XP again?' },
-    { name: 'Oliver', location: 'Balmain', xp: 1775, message: 'I’ve got potential, just not XP.' },
-    { name: 'Alexander', location: 'Alexandria', xp: 2000, message: '' },
-  ];
-
-  function loadPlayers() {
-    const saved = localStorage.getItem('leaderboard_data');
-    return saved ? JSON.parse(saved) : defaultPlayers;
-  }
-
-  function savePlayers(players) {
-    localStorage.setItem('leaderboard_data', JSON.stringify(players));
-  }
-</script>
-
+  <div class="message-banner" id="messageBanner"></div>
   <script>
+    const defaultPlayers = [
+      { name: 'Mason', location: 'Newtown', xp: 3980, message: 'Catch me if you can!' },
+      { name: 'Lachlan', location: 'Stanmore', xp: 3650, message: 'Top 3? More like top 1.' },
+      { name: 'Zoe', location: 'Annandale', xp: 3250, message: 'Girls rule this board!' },
+      { name: 'Ethan', location: 'Marrickville', xp: 2890, message: 'Almost there, just a few hundred more.' },
+      { name: 'Ruby', location: 'Dulwich Hill', xp: 2755, message: 'XP hoarder and proud!' },
+      { name: 'Noah', location: 'Leichhardt', xp: 2480, message: 'XP grind never stops.' },
+      { name: 'Charlotte', location: 'Petersham', xp: 2120, message: 'Soon you’ll all see.' },
+      { name: 'Jack', location: 'Rozelle', xp: 1990, message: 'I’m not last. That’s a win.' },
+      { name: 'Lucas', location: 'Haberfield', xp: 1840, message: 'Wait... what’s XP again?' },
+      { name: 'Oliver', location: 'Balmain', xp: 1775, message: 'I’ve got potential, just not XP.' },
+      { name: 'Alexander', location: 'Alexandria', xp: 2000, message: '' },
+    ];
+
+    function loadPlayers() {
+      const saved = localStorage.getItem('leaderboard_data');
+      return saved ? JSON.parse(saved) : defaultPlayers;
+    }
+
+    function savePlayers(players) {
+      localStorage.setItem('leaderboard_data', JSON.stringify(players));
+    }
+
+    function saveChallenge(challenger, challenged, challengerXP, challengedXP, startTime) {
+      localStorage.setItem('challenge', JSON.stringify({ challenger, challenged, challengerXP, challengedXP, startTime }));
+    }
+
+    function loadChallenge() {
+      return JSON.parse(localStorage.getItem('challenge'));
+    }
+
     let players = loadPlayers();
     const alexMsgInput = document.getElementById('alexMsg');
+    const messageBanner = document.getElementById('messageBanner');
+    const CHALLENGE_TIMEOUT = 24 * 60 * 60 * 1000;
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
     function renderLeaderboard() {
       const tbody = document.querySelector('#leaderboard tbody');
       players.sort((a, b) => b.xp - a.xp);
       tbody.innerHTML = '';
+
+      const challenge = loadChallenge();
+      const now = Date.now();
+
       players.forEach((p, i) => {
-        const row = document.createElement('tr');
-        if (i < 3) row.classList.add('top-3');
-        row.innerHTML = `
-          <td class="name" data-message="${p.name === 'Alexander' ? (p.message ? 'Message from Alexander: ' + p.message : '') : p.message}">${p.name}</td>
-          <td>${p.location}</td>
-          <td>${p.xp}</td>
-        `;
-        tbody.appendChild(row);
+        const tr = document.createElement('tr');
+        if (i < 3) tr.classList.add('top-3');
+
+        const crown = challenge && challenge.winner === p.name ? ' <span class="crown">👑</span>' : '';
+        const msg = p.name === 'Alexander' && p.message ? 'Message from Alexander: ' + p.message : p.message;
+
+        const tdName = document.createElement('td');
+        tdName.className = 'name';
+        tdName.setAttribute('data-message', msg || '');
+        tdName.innerHTML = `${p.name}${crown}`;
+        if (isTouch && msg) {
+          tdName.addEventListener('click', () => {
+            messageBanner.textContent = msg;
+          });
+        }
+
+        const tdLoc = document.createElement('td');
+        tdLoc.textContent = p.location;
+
+        const tdXP = document.createElement('td');
+        tdXP.textContent = p.xp;
+
+        const tdBtn = document.createElement('td');
+        const btn = document.createElement('button');
+        btn.className = 'challenge-btn';
+
+        if (!challenge || now - challenge.startTime > CHALLENGE_TIMEOUT) {
+          btn.textContent = 'Challenge';
+          btn.onclick = () => {
+            if (confirm(`Challenge ${p.name}?`)) {
+              saveChallenge('Alexander', p.name, players.find(x => x.name === 'Alexander').xp, p.xp, Date.now());
+              renderLeaderboard();
+            }
+          };
+        } else if (challenge.challenger === 'Alexander' && challenge.challenged === p.name) {
+          const deltaA = players.find(x => x.name === 'Alexander').xp - challenge.challengerXP;
+          const deltaB = p.xp - challenge.challengedXP;
+          btn.textContent = `You vs ${p.name}: ${deltaA} vs ${deltaB}`;
+        } else {
+          btn.textContent = 'Locked';
+          btn.disabled = true;
+        }
+
+        tdBtn.appendChild(btn);
+        tr.appendChild(tdName);
+        tr.appendChild(tdLoc);
+        tr.appendChild(tdXP);
+        tr.appendChild(tdBtn);
+        tbody.appendChild(tr);
       });
+
+      if (challenge && now - challenge.startTime > CHALLENGE_TIMEOUT && !challenge.winner) {
+        const deltaA = players.find(x => x.name === challenge.challenger).xp - challenge.challengerXP;
+        const deltaB = players.find(x => x.name === challenge.challenged).xp - challenge.challengedXP;
+        challenge.winner = deltaA > deltaB ? challenge.challenger : challenge.challenged;
+        localStorage.setItem('challenge', JSON.stringify(challenge));
+      }
     }
 
     document.getElementById('updateMsg').addEventListener('click', () => {
